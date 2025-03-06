@@ -271,6 +271,8 @@ if predict_file:
 
                     # Display the first few results
                     st.dataframe(full_data[["seller_active_quarter", "seller_id", "sales", "Churn Prediction"]].head())
+                    full_data = full_data.drop(columns={'is_churn'})
+                    full_data = full_data.rename(columns={"Churn Prediction":'is_churn'})
 
                     # Prepare for download
                     output_csv = io.BytesIO()
