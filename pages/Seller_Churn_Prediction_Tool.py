@@ -342,6 +342,11 @@ if predict_file:
                     # Rotate x-axis labels for better readability
                     fig.update_layout(
                         xaxis_title="Quarter",
+                        title={
+                            "text": f"Sales Trend - {selected_seller}",
+                            "x": 0.5,  # Centers the title
+                            "xanchor": "center"  # Ensures proper alignment
+                        },
                         yaxis_title="Sales",
                         xaxis_tickangle=-45  # Rotates labels by 45 degrees
                     )
@@ -365,6 +370,11 @@ if predict_file:
                         # Rotate x-axis labels for better readability
                         fig.update_layout(
                             xaxis_title="Quarter",
+                            title={
+                            "text": f"Order Trend - {selected_seller}",
+                            "x": 0.5,  # Centers the title
+                            "xanchor": "center"  # Ensures proper alignment
+                        },
                             yaxis_title="Number of Order",
                             xaxis_tickangle=-45  # Rotates labels by 45 degrees
                         )
