@@ -139,7 +139,7 @@ if predict_file:
         churn_historical_processed = process_churn_data(churn_historical)
         churn_predict_processed = process_churn_data(churn_predict)
 
-        monthly_subscription_cost = st.sidebar.number_input("Monthly Subscription Cost", value=39.99)
+        monthly_subscription_cost = st.sidebar.number_input("Monthly Subscription Cost", value=39.00)
         sales_commission_rate = st.sidebar.slider("Sales Commission Rate", 0.0, 1.0, 0.18)
 
         # Filter Profitable Sellers
