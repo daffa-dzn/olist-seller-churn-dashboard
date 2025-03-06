@@ -246,11 +246,10 @@ if predict_file:
                                     </div>
                                     """, unsafe_allow_html=True
                                 )
-
-        # ✅ Title for Bulk Prediction
+        
+        # ✅ Bulk Prediction for All Sellers
         st.subheader("🎯 Predict Churn for All Sellers")
 
-        # Predict Button (All Sellers)
         if st.button("🚀 Predict Churn for All Sellers"):
             if churn_predict_processed is None or churn_predict_processed.empty:
                 st.warning("⚠️ Please upload a valid prediction dataset first.")
@@ -266,25 +265,64 @@ if predict_file:
                     # Predict for all sellers
                     full_data["Churn Prediction"] = model.predict(X_full)
 
-                    # ✅ Updated title for better clarity
-                    st.subheader("📊 Preview of Full Prediction Results")
+                    # ✅ Split Priority & Standard Sellers who will churn
+                    priority_churn_sellers = full_data[
+                        (full_data["seller_id"].isin(combined_top_sellers)) & (full_data["Churn Prediction"] == 1)
+                    ]
+                    standard_churn_sellers = full_data[
+                        (full_data["seller_id"].isin(non_top_sellers)) & (full_data["Churn Prediction"] == 1)
+                    ]
 
-                    # Display the first few results
-                    st.dataframe(full_data[["seller_active_quarter", "seller_id", "sales", "Churn Prediction"]].head())
-                    full_data = full_data.drop(columns={'is_churn'})
-                    full_data = full_data.rename(columns={"Churn Prediction":'is_churn'})
+                    # Create Three Columns for Display
+                    col1, col2, col3 = st.columns(3)
 
-                    # Prepare for download
-                    output_csv = io.BytesIO()
-                    full_data.to_csv(output_csv, index=False)
-                    output_csv.seek(0)
+                    # 📊 Column 1 - All Predicted Sellers
+                    with col1:
+                        st.subheader("📊 All Predicted Sellers")  # ✅ Updated Name
+                        st.dataframe(full_data[["seller_active_quarter", "seller_id", "sales", "Churn Prediction"]].head())
 
-                    st.download_button(
-                        label="📥 Download Predictions",
-                        data=output_csv,
-                        file_name="churn_predictions.csv",
-                        mime="text/csv"
-                    )
+                        output_csv = io.BytesIO()
+                        full_data.to_csv(output_csv, index=False)
+                        output_csv.seek(0)
+
+                        st.download_button(
+                            label="📥 Download Full Predictions",
+                            data=output_csv,
+                            file_name="churn_predictions_all.csv",
+                            mime="text/csv"
+                        )
+
+                    # 🚨 Column 2 - Priority Sellers Who Will Churn
+                    with col2:
+                        st.subheader("🚨 Priority Sellers (Churn)")  # ✅ Updated Name
+                        st.dataframe(priority_churn_sellers[["seller_active_quarter", "seller_id", "sales", "Churn Prediction"]].head())
+
+                        output_csv_priority = io.BytesIO()
+                        priority_churn_sellers.to_csv(output_csv_priority, index=False)
+                        output_csv_priority.seek(0)
+
+                        st.download_button(
+                            label="📥 Download Priority Churners",
+                            data=output_csv_priority,
+                            file_name="priority_sellers_churn.csv",
+                            mime="text/csv"
+                        )
+
+                    # ⚠️ Column 3 - Standard Sellers Who Will Churn
+                    with col3:
+                        st.subheader("⚠️ Standard Sellers (Churn)")  # ✅ Updated Name
+                        st.dataframe(standard_churn_sellers[["seller_active_quarter", "seller_id", "sales", "Churn Prediction"]].head())
+
+                        output_csv_standard = io.BytesIO()
+                        standard_churn_sellers.to_csv(output_csv_standard, index=False)
+                        output_csv_standard.seek(0)
+
+                        st.download_button(
+                            label="📥 Download Standard Churners",
+                            data=output_csv_standard,
+                            file_name="standard_sellers_churn.csv",
+                            mime="text/csv"
+                        )
 
        # Seller Performance Visualization
         st.subheader("📊 Seller Performance Over Time")
