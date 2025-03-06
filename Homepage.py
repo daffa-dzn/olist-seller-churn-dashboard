@@ -60,7 +60,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 st.markdown('''
-    For details on how the model works, visit: [Click Here](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+    For details on how the model works, visit: [Click Here](https://github.com/PurwadhikaDev/AlphaGroup_JC_DS_FT_BDG_05_FinalProject)
     
     Created by: Team Alpha
 ''')
