@@ -297,30 +297,80 @@ if predict_file:
                 # Create two columns for side-by-side plots
                 col1, col2 = st.columns(2)
 
+                # with col1:
+                #     st.subheader("Total Sales per Quarter")
+                #     fig, ax = plt.subplots(figsize=(6, 3))  # Smaller figure size
+                #     ax.plot(seller_data.index.astype(str), seller_data["sales"], marker="o", linestyle="-", color="b", label="Total Sales")
+                #     ax.set_xlabel("Quarter")
+                #     ax.set_ylabel("Sales")
+                #     ax.set_title(f"Sales Trend - {selected_seller}")
+                #     ax.legend()
+                #     ax.grid(True)
+                #     st.pyplot(fig)
+
+                # with col2:
+                #     if "n_orders" in seller_data.columns:
+                #         st.subheader("Total Orders per Quarter")
+                #         fig, ax = plt.subplots(figsize=(6, 3))  # Same size as sales graph
+                #         ax.plot(seller_data.index.astype(str), seller_data["n_orders"], marker="o", linestyle="-", color="g", label="Total Orders")
+                #         ax.set_xlabel("Quarter")
+                #         ax.set_ylabel("Number of Orders")
+                #         ax.set_title(f"Order Trend - {selected_seller}")
+                #         ax.legend()
+                #         ax.grid(True)
+                #         st.pyplot(fig)
+                #     else:
+                #         st.warning(f"⚠️ 'n_orders' column is missing in the dataset for seller {selected_seller}.")
+
                 with col1:
+                    import plotly.express as px
+
                     st.subheader("Total Sales per Quarter")
-                    fig, ax = plt.subplots(figsize=(6, 3))  # Smaller figure size
-                    ax.plot(seller_data.index.astype(str), seller_data["sales"], marker="o", linestyle="-", color="b", label="Total Sales")
-                    ax.set_xlabel("Quarter")
-                    ax.set_ylabel("Sales")
-                    ax.set_title(f"Sales Trend - {selected_seller}")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
+
+                    # Ensure 'seller_active_quarter' is a string for categorical display
+                    seller_data_reset = seller_data.reset_index()
+                    seller_data_reset["seller_active_quarter"] = seller_data_reset["seller_active_quarter"].astype(str)
+
+                    # Create interactive Plotly chart with rotated x-axis labels
+                    fig = px.line(
+                        seller_data_reset,
+                        x="seller_active_quarter",
+                        y="sales",
+                        markers=True
+                    )
+
+                    # Rotate x-axis labels for better readability
+                    fig.update_layout(
+                        xaxis_title="Quarter",
+                        yaxis_title="Sales",
+                        xaxis_tickangle=-45  # Rotates labels by 45 degrees
+                    )
+
+                    # Display in Streamlit
+                    st.plotly_chart(fig, use_container_width=True)
 
                 with col2:
                     if "n_orders" in seller_data.columns:
                         st.subheader("Total Orders per Quarter")
-                        fig, ax = plt.subplots(figsize=(6, 3))  # Same size as sales graph
-                        ax.plot(seller_data.index.astype(str), seller_data["n_orders"], marker="o", linestyle="-", color="g", label="Total Orders")
-                        ax.set_xlabel("Quarter")
-                        ax.set_ylabel("Number of Orders")
-                        ax.set_title(f"Order Trend - {selected_seller}")
-                        ax.legend()
-                        ax.grid(True)
-                        st.pyplot(fig)
-                    else:
-                        st.warning(f"⚠️ 'n_orders' column is missing in the dataset for seller {selected_seller}.")
+
+                        # Ensure 'seller_active_quarter' is a string for categorical display
+                        # Create interactive Plotly chart with rotated x-axis labels
+                        fig = px.line(
+                            seller_data_reset,
+                            x="seller_active_quarter",
+                            y="n_orders",
+                            markers=True
+                        )
+
+                        # Rotate x-axis labels for better readability
+                        fig.update_layout(
+                            xaxis_title="Quarter",
+                            yaxis_title="Number of Order",
+                            xaxis_tickangle=-45  # Rotates labels by 45 degrees
+                        )
+
+                        # Display in Streamlit
+                        st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning(f"⚠️ No historical data available for seller {selected_seller}.")
 
