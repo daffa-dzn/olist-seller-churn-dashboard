@@ -22,11 +22,12 @@ with st.container():
     with col2:
         st.markdown(
             """
-            <br><br><br><br><br><br><br>  <!-- Add empty space -->
-            <h1 style='text-align: left; font-size: 40px;'>Welcome to Olist's Seller Churn Prediction Tool</h1>
-            """, 
+            <div style="display: flex; flex-direction: column; justify-content: center; height: 32vh;">
+                <h1 style="font-size: 40px;">Welcome to Olist's Seller Churn Prediction Tool</h1>
+            </div>
+            """,
             unsafe_allow_html=True
-        )
+    )
 
 
 st.write("")
