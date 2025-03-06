@@ -189,11 +189,13 @@ if predict_file:
 
         with col1:
             st.subheader("📌 Priority Sellers (Past)")  # Short & balanced
+            st.write(f"Total Seller : {top_sellers_last_year.shape[0]}")
             top_sellers_last_year["net_sales"] = top_sellers_last_year["net_sales"].round(0)  # Round to 2 decimal places
             st.dataframe(top_sellers_last_year.sort_values(by='net_sales',ascending=False))
 
         with col2:
             st.subheader("📌 Priority Sellers (Now)")  # Short & balanced
+            st.write(f"Total Seller : {top_sellers_predict.shape[0]}")
             top_sellers_predict["sales"] = top_sellers_predict["sales"].round(0)  # Round to 2 decimal places
             st.dataframe(top_sellers_predict[["seller_active_quarter", "seller_id", "sales"]].sort_values(by='sales',ascending=False))
 
