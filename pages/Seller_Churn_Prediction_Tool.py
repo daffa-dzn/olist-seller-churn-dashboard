@@ -55,17 +55,25 @@ def get_profitable_seller_sales_year(df, monthly_subscription_cost, sales_commis
 
 # Check Priority Sellers
 def check_priority_sellers(test_data, seller_sales_year, segment='top_20_pct'):
-    top_sellers_list = seller_sales_year[seller_sales_year.net_sales >= seller_sales_year.net_sales.quantile(0.80)]["seller_id"]
-    upper_20_bound = test_data['sales'].quantile(0.80)
+    # Filter seller_sales_year to only sellers in test_data
+    seller_sales_test = seller_sales_year[seller_sales_year["seller_id"].isin(test_data["seller_id"])]
 
+    if seller_sales_test.empty:
+        raise ValueError("No matching sellers found in the reference sales data.")
+
+    # Identify top sellers based on net sales (Top 20%)
+    top_sellers_list = seller_sales_test[
+        seller_sales_test["net_sales"] >= seller_sales_test["net_sales"].quantile(0.80)
+    ]["seller_id"]
+    
+    # Create masks based on the specified segment
     if segment == 'top_20_pct':
-        mask = (test_data['seller_id'].isin(top_sellers_list)) | (test_data['sales'] >= upper_20_bound)
+        mask = test_data["seller_id"].isin(top_sellers_list)
     elif segment == 'regular':
-        mask = (~test_data['seller_id'].isin(top_sellers_list)) & (test_data['sales'] < upper_20_bound)
+        mask = (~test_data["seller_id"].isin(top_sellers_list)) & (test_data["seller_id"].isin(seller_sales_test["seller_id"]))
     else:
-        st.error("Invalid segment. Use 'top_20_pct' or 'regular'.")
-        return None
-
+        raise ValueError("Invalid segment. Use 'top_20_pct' or 'regular'.")
+    
     return mask
 
 # Process Churn Data
