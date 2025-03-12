@@ -212,6 +212,7 @@ if predict_file:
             st.dataframe(top_sellers_predict.sort_values(by='net_sales',ascending=False))
 
         # Predict Button (Single Seller)
+        st.subheader("🎯 Predict Churn for Selected Seller")
         if st.button("🚀 Predict Churn for Selected Seller"):
             if selected_seller is None:
                 st.warning("⚠️ Please select a seller before predicting.")
