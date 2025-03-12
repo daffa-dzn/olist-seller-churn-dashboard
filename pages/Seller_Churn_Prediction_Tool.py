@@ -53,7 +53,7 @@ def get_profitable_seller_sales_year(df, monthly_subscription_cost, sales_commis
     
     return seller_sales
 
-# Check Priority Sellers
+# Check Top Sellers
 def check_priority_sellers(test_data, seller_sales_year, segment='top_20_pct'):
     # Filter seller_sales_year to only sellers in test_data
     seller_sales_test = seller_sales_year[seller_sales_year["seller_id"].isin(test_data["seller_id"])]
@@ -154,74 +154,90 @@ if predict_file:
         profitable_sellers_historical = filter_profitable_sellers(churn_historical_processed, monthly_subscription_cost, sales_commission_rate)
         profitable_sellers_predict = filter_profitable_sellers(churn_predict_processed, monthly_subscription_cost, sales_commission_rate)
 
-        # Get Top Sellers (Last Year)
-        seller_sales_year = get_profitable_seller_sales_year(churn_historical_processed, monthly_subscription_cost, sales_commission_rate, '2017Q1', '2017Q4')
-        top_sellers_last_year = seller_sales_year[seller_sales_year["net_sales"] >= seller_sales_year["net_sales"].quantile(0.80)]
+        # Get Top Sellers (Historical)
+        historical_end_quarter = str(churn_historical_processed.index.max())
+        historical_start_quarter = str(churn_historical_processed.index.min())
 
-        # Ensure Top Sellers Predict has the same structure as Top Sellers Last Year
-        # Correct: Only show sellers whose sales are in the top 20% of the prediction dataset
-        top_sellers_predict = churn_predict_processed[churn_predict_processed["sales"] >= churn_predict_processed["sales"].quantile(0.80)]
+        seller_sales_historical = get_profitable_seller_sales_year(churn_historical_processed, monthly_subscription_cost, sales_commission_rate, historical_start_quarter, historical_end_quarter)
+        top_sellers_historical = seller_sales_historical[seller_sales_historical["net_sales"] >= seller_sales_historical["net_sales"].quantile(0.80)]
+
+        # Get Top Sellers (Predict)
+        assert churn_predict_processed.index.nunique() == 1
+
+        predict_last_year_end_quarter = str(churn_predict_processed.index.unique()[0]-1)
+        predict_last_year_start_quarter = str(churn_predict_processed.index.unique()[0]-4)
+
+        seller_sales_current = get_profitable_seller_sales_year(churn_historical_processed, monthly_subscription_cost, sales_commission_rate, predict_last_year_start_quarter, predict_last_year_end_quarter)
+        seller_sales_predict = seller_sales_current[seller_sales_current["seller_id"].isin(churn_predict_processed["seller_id"])]
+        top_sellers_predict = seller_sales_predict[seller_sales_predict["net_sales"] >= seller_sales_predict["net_sales"].quantile(0.80)]
 
         # Get seller IDs that exist in the Predict Data
         sellers_in_predict_data = set(churn_predict_processed["seller_id"])
 
-        # Combine Top Sellers (Only those who are also in Predict Data)
-        combined_top_sellers = sellers_in_predict_data.intersection(
-            set(top_sellers_last_year["seller_id"]).union(set(top_sellers_predict["seller_id"]))
-        )
-
-        # Identify Reguler Sellers (Sellers in Predict Data but NOT in Top Sellers)
-        non_top_sellers = sellers_in_predict_data - combined_top_sellers
+        # Identify Reguler Sellers (Profitable Sellers in Predict Data but NOT in Top Sellers)
+        reg_sellers_predict = seller_sales_current[~seller_sales_current["seller_id"].isin(churn_predict_processed["seller_id"])]
 
         # Select Sellers
         st.sidebar.subheader("Select Active Sellers")
-        selected_segment = st.sidebar.radio("Seller Type", ["Priority Sellers", "Standard Sellers"])  # ✅ Renamed options
+        selected_segment = st.sidebar.radio("Seller Type", ["Top Sellers", "Regular Sellers"])  # ✅ Renamed options
 
         selected_seller = None  # ✅ Ensure selected_seller is always defined
 
-        if selected_segment == "Priority Sellers":
-            selected_seller = st.sidebar.selectbox("Select a Seller", natural_sort(list(combined_top_sellers)))  # ✅ Fixed sorting
+        if selected_segment == "Top Sellers":
+            selected_seller = st.sidebar.selectbox("Select a Seller", natural_sort(list(top_sellers_predict["seller_id"])))  # ✅ Fixed sorting
         else:
-            selected_seller = st.sidebar.selectbox("Select a Seller", natural_sort(list(non_top_sellers)))  # ✅ Fixed sorting
+            selected_seller = st.sidebar.selectbox("Select a Seller", natural_sort(list(reg_sellers_predict["seller_id"])))  # ✅ Fixed sorting
 
         # Display Data
-        st.subheader("📂 Preview of Data (Data to Predict)")
+        st.subheader("📂 Preview of Data (Current Active to Predict)")
         st.dataframe(churn_predict_processed.head())
 
-        # Ensure seller_active_quarter is included in top_sellers_predict
-        if "seller_active_quarter" not in top_sellers_predict.columns:
-            top_sellers_predict = top_sellers_predict.reset_index()  # Fix if it was removed as an index
+        # # Ensure seller_active_quarter is included in top_sellers_predict
+        # if "seller_active_quarter" not in top_sellers_predict.columns:
+        #     top_sellers_predict = top_sellers_predict.reset_index()  # Fix if it was removed as an index
 
-        # Display Priority Sellers Tables
+        # Display Top Sellers Tables
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("📌 Priority Sellers (Past)")  # Short & balanced
-            st.write(f"Total Seller : {top_sellers_last_year.shape[0]}")
-            top_sellers_last_year["net_sales"] = top_sellers_last_year["net_sales"].round(0)  # Round to 2 decimal places
-            st.dataframe(top_sellers_last_year.sort_values(by='net_sales',ascending=False))
+            st.subheader("📌 Top Sellers (Past Overall)")  # Short & balanced
+            st.write(f"Total Seller : {top_sellers_historical.shape[0]}")
+            top_sellers_historical["net_sales"] = top_sellers_historical["net_sales"].round(0)  # Round to 2 decimal places
+            st.dataframe(top_sellers_historical.sort_values(by='net_sales',ascending=False))
 
         with col2:
-            st.subheader("📌 Priority Sellers (Now)")  # Short & balanced
+            st.subheader("📌 Top Sellers (Current Active)")  # Short & balanced
             st.write(f"Total Seller : {top_sellers_predict.shape[0]}")
-            top_sellers_predict["sales"] = top_sellers_predict["sales"].round(0)  # Round to 2 decimal places
-            st.dataframe(top_sellers_predict[["seller_active_quarter", "seller_id", "sales"]].sort_values(by='sales',ascending=False))
-
-        # ✅ Title for Single Seller Prediction
-        st.subheader("🎯 Predict Churn for Selected Seller")
+            top_sellers_predict["net_sales"] = top_sellers_predict["net_sales"].round(0)  # Round to 2 decimal places
+            st.dataframe(top_sellers_predict.sort_values(by='net_sales',ascending=False))
 
         # Predict Button (Single Seller)
         if st.button("🚀 Predict Churn for Selected Seller"):
             if selected_seller is None:
                 st.warning("⚠️ Please select a seller before predicting.")
             else:
-                selected_data = churn_predict_processed[churn_predict_processed["seller_id"].isin([selected_seller])]
+                selected_data = churn_predict_processed[churn_predict_processed["seller_id"] == selected_seller]
 
                 if selected_data.empty:
                     st.warning(f"⚠️ No prediction data available for seller {selected_seller}.")
                 else:
                     selected_data = selected_data.reset_index()
 
+                    # Display relevant seller data in a table before prediction
+                    columns_to_display = [
+                        "seller_active_quarter",
+                        "seller_id",
+                        "last_month_active_quarter",
+                        "n_delivered_carrier_per_active_month",
+                        "n_months_active_quarter",
+                        "sales",
+                    ]
+                    available_columns = [col for col in columns_to_display if col in selected_data.columns]
+
+                    st.subheader("📋 Seller Data for Prediction")
+                    st.dataframe(selected_data[available_columns])
+
+                    # Prepare data for prediction
                     X_selected = selected_data.drop(columns=[col for col in ["seller_id", "churn", "is_churn"] if col in selected_data.columns])
 
                     missing_features = set(model.feature_names_in_) - set(X_selected.columns)
@@ -232,8 +248,7 @@ if predict_file:
 
                         st.subheader("📢 Prediction Result")
                         for idx, row in selected_data.iterrows():
-                            current_quarter = row["seller_active_quarter"]
-                            next_quarter = get_next_quarter(current_quarter)  # Get the next quarter
+                            next_quarter = (pd.Period(row["seller_active_quarter"], freq="Q") + 1).strftime("%YQ%q")
                             churn_status = predictions[idx]
 
                             if churn_status == 1:
@@ -273,12 +288,12 @@ if predict_file:
                     # Predict for all sellers and rename column
                     full_data["is_churn"] = model.predict(X_full)  # ✅ Renamed column
         
-                    # ✅ Split Priority & Standard Sellers who will churn
-                    priority_churn_sellers = full_data[
-                        (full_data["seller_id"].isin(combined_top_sellers)) & (full_data["is_churn"] == 1)
+                    # ✅ Split Top & Regular Sellers who will churn
+                    top_churn_sellers = full_data[
+                        (full_data["seller_id"].isin(top_sellers_predict["seller_id"])) & (full_data["is_churn"] == 1)
                     ]
                     standard_churn_sellers = full_data[
-                        (full_data["seller_id"].isin(non_top_sellers)) & (full_data["is_churn"] == 1)
+                        (full_data["seller_id"].isin(reg_sellers_predict["seller_id"])) & (full_data["is_churn"] == 1)
                     ]
         
                     # Create Three Columns for Display
@@ -300,25 +315,25 @@ if predict_file:
                             mime="text/csv"
                         )
         
-                    # 🚨 Column 2 - Priority Sellers Who Will Churn
+                    # 🚨 Column 2 - Top Sellers Who Will Churn
                     with col2:
-                        st.subheader("🚨 Priority Sellers (Churn)")
-                        st.dataframe(priority_churn_sellers[["seller_active_quarter", "seller_id", "sales", "is_churn"]].head())  # ✅ Renamed column
+                        st.subheader("🚨 Top Sellers (Churn)")
+                        st.dataframe(top_churn_sellers[["seller_active_quarter", "seller_id", "sales", "is_churn"]].head())  # ✅ Renamed column
         
                         output_csv_priority = io.BytesIO()
-                        priority_churn_sellers.to_csv(output_csv_priority, index=False)
+                        top_churn_sellers.to_csv(output_csv_priority, index=False)
                         output_csv_priority.seek(0)
         
                         st.download_button(
-                            label="📥 Download Priority Churners",
+                            label="📥 Download Top Churners",
                             data=output_csv_priority,
                             file_name="priority_sellers_churn.csv",
                             mime="text/csv"
                         )
         
-                    # ⚠️ Column 3 - Standard Sellers Who Will Churn
+                    # ⚠️ Column 3 - Regular Sellers Who Will Churn
                     with col3:
-                        st.subheader("⚠️ Standard Sellers (Churn)")
+                        st.subheader("⚠️ Regular Sellers (Churn)")
                         st.dataframe(standard_churn_sellers[["seller_active_quarter", "seller_id", "sales", "is_churn"]].head())  # ✅ Renamed column
         
                         output_csv_standard = io.BytesIO()
@@ -326,7 +341,7 @@ if predict_file:
                         output_csv_standard.seek(0)
         
                         st.download_button(
-                            label="📥 Download Standard Churners",
+                            label="📥 Download Regular Churners",
                             data=output_csv_standard,
                             file_name="standard_sellers_churn.csv",
                             mime="text/csv"
@@ -342,31 +357,6 @@ if predict_file:
             if not seller_data.empty:
                 # Create two columns for side-by-side plots
                 col1, col2 = st.columns(2)
-
-                # with col1:
-                #     st.subheader("Total Sales per Quarter")
-                #     fig, ax = plt.subplots(figsize=(6, 3))  # Smaller figure size
-                #     ax.plot(seller_data.index.astype(str), seller_data["sales"], marker="o", linestyle="-", color="b", label="Total Sales")
-                #     ax.set_xlabel("Quarter")
-                #     ax.set_ylabel("Sales")
-                #     ax.set_title(f"Sales Trend - {selected_seller}")
-                #     ax.legend()
-                #     ax.grid(True)
-                #     st.pyplot(fig)
-
-                # with col2:
-                #     if "n_orders" in seller_data.columns:
-                #         st.subheader("Total Orders per Quarter")
-                #         fig, ax = plt.subplots(figsize=(6, 3))  # Same size as sales graph
-                #         ax.plot(seller_data.index.astype(str), seller_data["n_orders"], marker="o", linestyle="-", color="g", label="Total Orders")
-                #         ax.set_xlabel("Quarter")
-                #         ax.set_ylabel("Number of Orders")
-                #         ax.set_title(f"Order Trend - {selected_seller}")
-                #         ax.legend()
-                #         ax.grid(True)
-                #         st.pyplot(fig)
-                #     else:
-                #         st.warning(f"⚠️ 'n_orders' column is missing in the dataset for seller {selected_seller}.")
 
                 with col1:
                     import plotly.express as px
