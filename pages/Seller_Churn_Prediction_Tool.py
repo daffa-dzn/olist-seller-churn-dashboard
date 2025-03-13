@@ -232,6 +232,9 @@ if predict_file:
                         "n_delivered_carrier_per_active_month",
                         "n_months_active_quarter",
                         "sales",
+                        "median_approve_time", 
+                        "median_review_score",
+                        "tenure_months"
                     ]
                     available_columns = [col for col in columns_to_display if col in selected_data.columns]
 
