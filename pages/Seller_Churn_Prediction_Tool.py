@@ -175,7 +175,12 @@ if predict_file:
         sellers_in_predict_data = set(churn_predict_processed["seller_id"])
 
         # Identify Reguler Sellers (Profitable Sellers in Predict Data but NOT in Top Sellers)
-        reg_sellers_predict = seller_sales_current[~seller_sales_current["seller_id"].isin(churn_predict_processed["seller_id"])]
+        # Regular sellers = Sellers in prediction dataset but NOT in top sellers
+        reg_sellers_predict = seller_sales_current[
+            seller_sales_current["seller_id"].isin(churn_predict_processed["seller_id"]) & 
+            ~seller_sales_current["seller_id"].isin(top_sellers_predict["seller_id"])
+        ]
+
 
         # Select Sellers
         st.sidebar.subheader("Select Active Sellers")
@@ -297,9 +302,10 @@ if predict_file:
                         (full_data["seller_id"].isin(top_sellers_predict["seller_id"])) & (full_data["is_churn"] == 1)
                     ]
                     standard_churn_sellers = full_data[
-                        (full_data["seller_id"].isin(reg_sellers_predict["seller_id"])) & (full_data["is_churn"] == 1)
+                        (full_data["seller_id"].isin(reg_sellers_predict["seller_id"])) & 
+                        (full_data["is_churn"] == 1)
                     ]
-        
+
                     # Create Three Columns for Display
                     col1, col2, col3 = st.columns(3)
         
